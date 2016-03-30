@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var Category = require('/category');
 
 var topicSchema = {
+	id: { type: String, required: true },
 	name: { type: String, required: true },
 	intro: { type: String, required: true },
 	content: [{
