@@ -1,8 +1,7 @@
 var mongoose = require('mongoose');
-var Category = require('/category');
+var Category = require('./category');
 
 var topicSchema = {
-	id: { type: String, required: true },
 	name: { type: String, required: true },
 	intro: { type: String, required: true },
 	content: [{
@@ -21,8 +20,8 @@ var topicSchema = {
 			date: { type: Date, required: true }
 		},
 		last_edited: {
-			by: { type: String, required: true },
-			date: { type: Date, required: true }
+			by: { type: String },
+			date: { type: Date }
 		},
 		votes: {
 			upvotes: { type: Number, required: true },

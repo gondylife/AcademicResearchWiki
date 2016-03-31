@@ -55,7 +55,6 @@ module.exports = function(wagner) {
 	    return function(req, res) {
 	      	Topic.
 	        	find({ 'category.ancestors': req.params.id }).
-	        	sort(sort).
 	        	exec(handleMany.bind(null, 'topics', res));
 	    	};
   	}));

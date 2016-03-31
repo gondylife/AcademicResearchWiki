@@ -5,9 +5,10 @@ var wagner = require('wagner-core');
 
 var URL_ROOT = 'http://localhost:3000';
 
-describe('Category API', function() {
+describe('Topic API', function() {
   var server;
   var Category;
+  var Topic;
 
   before(function() {
     var app = express();
@@ -18,8 +19,9 @@ describe('Category API', function() {
 
     server = app.listen(3000);
 
-    // Make Category model available in tests
+    // Make models available in tests
     Category = models.Category;
+    Topic = models.Topic;
   });
 
   after(function() {
@@ -31,53 +33,133 @@ describe('Category API', function() {
     // Make sure categories are empty before each test
     Category.remove({}, function(error) {
       assert.ifError(error);
-      done();
-    });
-  });
-
-  it('can load a category by id', function(done) {
-    // Create a single category
-    Category.create({ _id: 'Softwares' }, function(error, doc) {
-      assert.ifError(error);
-      var url = URL_ROOT + '/category/id/Softwares';
-      // Make an HTTP request to localhost:3000/category/id/Softwares
-      superagent.get(url, function(error, res) {
+      Topic.remove({}, function(error) {
         assert.ifError(error);
-        var result;
-        // And make sure we got { _id: 'Softwares' } back
-        assert.doesNotThrow(function() {
-          result = JSON.parse(res.text);
-        });
-        assert.ok(result.category);
-        assert.equal(result.category._id, 'Softwares');
         done();
       });
     });
   });
 
-  it('can load all categories that have a certain parent', function(done) {
+  it('can load a topic by id', function(done) {
+    // Create a single topic
+    var TOPIC_ID = '000000000000000000000001';
+    var topic = {
+      _id: TOPIC_ID,
+      name: 'QuickTime Player',
+      intro: 'QuickTime Player is used for watching media files',
+      content: [{
+        title: 'History',
+        body: 'This was bulit in 2010',
+        number: '1',
+        parent: '1'
+      }],
+      meta: {
+        creation: {
+          by: 'Godswill Okwara',
+          date: '2014-12-08'
+        },
+        votes: {
+          upvotes: 0,
+          downvotes: 0
+        }
+      },
+      bibliography: ['Hacquard, Valentine. 2006. Aspects of Modality. Ph.D. Dissertation, MIT, available online.']
+    };
+    Topic.create(topic, function(error, doc) {
+      assert.ifError(error);
+      var url = URL_ROOT + '/topic/id/' + TOPIC_ID;
+      // Make an HTTP request to
+      // "localhost:3000/topic/id/000000000000000000000001"
+      superagent.get(url, function(error, res) {
+        assert.ifError(error);
+        var result;
+        // And make sure we got the QuickTime Player back
+        assert.doesNotThrow(function() {
+          result = JSON.parse(res.text);
+        });
+        assert.ok(result.topic);
+        assert.equal(result.topic._id, TOPIC_ID);
+        assert.equal(result.topic.name, 'QuickTime Player');
+        done();
+      });
+    });
+  });
+
+  it('can load all topicss in a category with sub-categories', function(done) {
     var categories = [
       { _id: 'Softwares' },
-      { _id: 'Application softwares', parent: 'Softwares' },
-      { _id: 'System softwares', parent: 'Softwares' },
+      { _id: 'System Softwares', parent: 'Softwares' },
+      { _id: 'Application Softwares', parent: 'Softwares' },
       { _id: 'Bacon' }
+    ];
+
+    var topics = [
+      {
+        name: 'QuickTime Player',
+        category: { _id: 'Application Softwares', ancestors: ['Softwares', 'Application Softwares'] },
+        intro: 'QuickTime Player is used for watching media files',
+        content: [{
+          title: 'History',
+          body: 'This was bulit in 2010',
+          number: '1',
+          parent: '1'
+        }],
+        meta: {
+          creation: {
+            by: 'Godswill Okwara',
+            date: '2014-12-08'
+          },
+          votes: {
+            upvotes: 0,
+            downvotes: 0
+          }
+        },
+        bibliography: ['Hacquard, Valentine. 2006. Aspects of Modality. Ph.D. Dissertation, MIT, available online.']
+      },
+      {
+        name: 'Kernel',
+        category: { _id: 'System Softwares', ancestors: ['Softwares', 'System Softwares'] },
+        intro: 'Kernel is core',
+        content: [{
+          title: 'History',
+          body: 'This was bulit in 2013',
+          number: '1',
+          parent: '1'
+        }],
+        meta: {
+          creation: {
+            by: 'Godswill Okwara',
+            date: '2014-11-08'
+          },
+          votes: {
+            upvotes: 0,
+            downvotes: 0
+          }
+        },
+        bibliography: ['Hacquard, Valentine. 2006. Aspects of Modality. Ph.D. Dissertation, UNN']
+      }
     ];
 
     // Create 4 categories
     Category.create(categories, function(error, categories) {
-      var url = URL_ROOT + '/category/parent/Softwares';
-      // Make an HTTP request to localhost:3000/category/parent/Softwares
-      superagent.get(url, function(error, res) {
+      assert.ifError(error);
+      // And 2 topics
+      Topic.create(topics, function(error, topics) {
         assert.ifError(error);
-        var result;
-        assert.doesNotThrow(function() {
-          result = JSON.parse(res.text);
+        var url = URL_ROOT + '/topic/category/Softwares';
+        // Make an HTTP request to localhost:3000/topic/category/Softwares
+        superagent.get(url, function(error, res) {
+          assert.ifError(error);
+          var result;
+          assert.doesNotThrow(function() {
+            result = JSON.parse(res.text);
+          });
+          assert.equal(result.topics.length, 2);
+          // Should be in ascending order by name
+          assert.equal(result.topics[0].name, 'QuickTime Player');
+          assert.equal(result.topics[1].name, 'Kernel');
+          done();
         });
-        assert.equal(result.categories.length, 2);
-        // Should be in ascending order by _id
-        assert.equal(result.categories[0]._id, 'Application softwares');
-        assert.equal(result.categories[1]._id, 'System softwares');
-        done();
       });
     });
   });
